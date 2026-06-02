@@ -1,0 +1,58 @@
+---
+- name: Configure Rocky Linux VM
+  hosts: rocky
+  become: true
+
+  vars:
+    jenkins_repo_content: |
+      [jenkins]
+      name=Jenkins-stable
+      baseurl=https://pkg.jenkins.io/redhat-stable
+      gpgcheck=0
+      enabled=1
+      gpgkey=https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+  tasks:
+    - name: Update metadata
+      dnf:
+        update_cache: true
+
+    - name: Install base packages
+      dnf:
+        name:
+          - git
+          - podman
+          - java-21-openjdk
+          - curl
+          - wget
+        state: present
+
+    - name: Add Jenkins repo
+      copy:
+        dest: /etc/yum.repos.d/jenkins.repo
+        content: "{{ jenkins_repo_content }}"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Import Jenkins key
+      rpm_key:
+        state: present
+        key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+    - name: Install Jenkins
+      dnf:
+        name: jenkins
+        state: present
+
+    - name: Enable Jenkins
+      systemd:
+        name: jenkins
+        enabled: true
+        state: started
+
+    - name: Enable Podman socket
+      systemd:
+        name: podman.socket
+        enabled: true
+        state: started
