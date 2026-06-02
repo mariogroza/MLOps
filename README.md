@@ -2,22 +2,7 @@
 
 > A fully containerized, locally-hosted AI assistant — built on Rocky Linux and automated with Jenkins.  
 > Developed as part of the **UVT × IBM MLOps Collaboration**.
-
----
-
-## Table of Contents
-
-1. [What This Project Does](#-what-this-project-does)
-2. [Tech Stack](#-tech-stack)
-3. [Architecture](#-architecture)
-4. [Quick Start (VirtualBox)](#-quick-start-virtualbox)
-5. [Manual Setup (Without Jenkins)](#-manual-setup-without-jenkins)
-6. [Automated Setup with Jenkins](#-automated-setup-with-jenkins)
-7. [Accessing the Services](#-accessing-the-services)
-8. [Kubernetes Deployment](#-kubernetes-deployment)
-9. [Project Structure](#-project-structure)
-10. [Troubleshooting](#-troubleshooting)
-
+> 
 ---
 
 ## What This Project Does
@@ -58,7 +43,7 @@ Both containers communicate through an **isolated Podman bridge network** called
                     llm-net (bridge network)              
                                                           
               
-      llama-server         open-webui          
+      llama-server-----------------open-webui          
       (port 8080)                 (port 3000)         
               
 
@@ -123,65 +108,6 @@ http://<YOUR_VM_IP>:3000
 ```
 
 You should see the Open WebUI chat interface. Type a message and the local AI will respond.
-
----
-
-## Manual Setup (Without Jenkins)
-
-Use this if you want to set up the stack from scratch on a fresh Rocky Linux machine.
-
-### Prerequisites
-
-- Rocky Linux 9
-- Podman installed
-- Jenkins running on port `8081`
-- At least **6 GB RAM** and **20 GB disk space**
-
-### Step 1 — Create the models directory
-
-```bash
-sudo mkdir -p /opt/models
-```
-
-### Step 2 — Create the container network
-
-```bash
-sudo podman network create llm-net
-```
-
-### Step 3 — Download the AI model
-
-```bash
-sudo curl -L -o /opt/models/model.gguf \
-  "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"
-```
-
-> WARNING: This file is approximately 400 MB. Make sure you have a stable connection.
-
-### Step 4 — Start all containers
-
-```bash
-# AI inference engine
-sudo podman run -d --name llama-server --network llm-net \
-  -v /opt/models:/models:Z -p 8080:8080 \
-  ghcr.io/ggml-org/llama.cpp:server \
-  -m /models/model.gguf --host 0.0.0.0 --port 8080
-
-# Chat interface
-sudo podman run -d --name open-webui --network llm-net \
-  -p 3000:8080 \
-  -e OPENAI_API_BASE_URL=http://llama-server:8080/v1 \
-  -e OPENAI_API_KEY=sk-no-key-required \
-  ghcr.io/open-webui/open-webui:main
-```
-
-### Verify everything is running
-
-```bash
-sudo podman ps
-```
-
-Both containers should show status `Up`.
 
 ---
 
